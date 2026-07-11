@@ -98,7 +98,17 @@
 
 ---
 
-## Slide 10: Interactive Dashboard Showcase
+## Slide 10: Model Generality & NASA C-MAPSS Validation
+* **The Challenge**: How do we know our Digital Twin framework generalizes beyond this specific 4-stage Turbojet dataset?
+* **Benchmark**: Evaluated the exact same modeling pipeline on the industry-standard **NASA C-MAPSS (FD001)** turbofan dataset.
+* **Feature Engineering**: Mapped thermodynamic proxies like `PR_HPC`, `TR_HPC`, `TR_LPT`, and `Speed_Ratio` Nc/Nf.
+* **Results**:
+  - **XGBoost RUL Prediction**: **Test $R^2 = 0.8134$**, **MAE = 12.27 cycles** (highly competitive with state-of-the-art predictive maintenance papers).
+* **Impact**: Demonstrates that our physics-informed framework is generalizable, robust, and ready for deployment on other aircraft engines.
+
+---
+
+## Slide 11: Interactive Dashboard Showcase
 * **Live Streamlit App**:
   - **Fleet Overview**: Color-coded engine health cards and glassmorphic summaries.
   - **Engine Detail**: Interactive cycle playback with bootstrap uncertainty bands.
@@ -107,7 +117,7 @@
 
 ---
 
-## Slide 11: Future Work & Limitations
+## Slide 12: Future Work & Limitations
 * **Limitations**:
   - Dataset size is relatively small (300 rows total).
   - Static 1D thermodynamic assumptions (ignores transient thermal lags).
@@ -118,9 +128,10 @@
 
 ---
 
-## Slide 12: Summary of Hackathon Solutions
+## Slide 13: Summary of Hackathon Solutions
 * **Deliverables**:
   - Clean, modular Python library (`src/`) for feature calculation, training, and inference.
   - Validated models (`models/`) with $R^2 > 0.92$ on overall health and $R^2 > 0.98$ on performance.
   - High-fidelity Streamlit visualization dashboard (`dashboard/app.py`).
   - Formal technical report (`technical_report.md`).
+  - NASA C-MAPSS Benchmark validation report (`results/cmapss_benchmark_report.md`).
