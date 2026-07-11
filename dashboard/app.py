@@ -174,20 +174,30 @@ def load_data_and_models():
     df = pd.read_csv(os.path.join(DATA_DIR, 'turbojet_complete_dataset.csv'))
     df = add_physics_features(df)
     
-    # Load models
+    # Load all models (stacked pipeline)
     xgb_models = joblib.load(os.path.join(BASE_DIR, 'models', 'xgboost_models.pkl'))
+    lgbm_models = joblib.load(os.path.join(BASE_DIR, 'models', 'lgbm_models.pkl'))
+    rf_models = joblib.load(os.path.join(BASE_DIR, 'models', 'rf_models.pkl'))
+    stack_models = joblib.load(os.path.join(BASE_DIR, 'models', 'stack_models.pkl'))
     ensemble_models = joblib.load(os.path.join(BASE_DIR, 'models', 'ensemble_models.pkl'))
     metadata = joblib.load(os.path.join(BASE_DIR, 'models', 'features_targets.pkl'))
     
     all_features = metadata['all_features']
     targets = metadata['targets']
     
-    # Pre-compute predictions for the full dataset to speed up dashboard
+    # Pre-compute STACKED predictions for the full dataset
     X = df[all_features].values
     for i, target in enumerate(targets):
-        df[target + '_pred'] = xgb_models[i].predict(X)
+        # Base model predictions
+        pred_xgb = xgb_models[i].predict(X)
+        pred_lgbm = lgbm_models[i].predict(X)
+        pred_rf = rf_models[i].predict(X)
         
-        # Uncertainty
+        # Stacked meta-learner prediction
+        meta_features = np.column_stack([pred_xgb, pred_lgbm, pred_rf])
+        df[target + '_pred'] = stack_models[i].predict(meta_features)
+        
+        # Uncertainty from bootstrap ensemble
         boot_preds = np.array([m.predict(X) for m in ensemble_models[target]])
         df[target + '_p10'] = np.percentile(boot_preds, 10, axis=0)
         df[target + '_p90'] = np.percentile(boot_preds, 90, axis=0)
@@ -574,34 +584,46 @@ elif page == "🔬 Model Evaluation":
     ### Cross-Validation & Modeling Framework
     To prevent data leakage across cycles of the same engine, we validated all models using **5-Fold GroupKFold Cross-Validation** grouped by `EngineID`.
     
-    Below is the comparison of our primary **Physics-Informed XGBoost** model against a standard **Random Forest** baseline and a **Ridge Regression** baseline fitted *only* on the engineered physics features.
+    Below is the comparison of our **Stacked Ensemble** (XGBoost + LightGBM + Random Forest → Ridge Meta-Learner) against individual base learners and a **Ridge Regression** baseline fitted on physics features.
     """)
     
     # Load and render metrics table
     metrics_data = [
-        {"Target": "CompressorHealth", "Model": "XGBoost", "R2": 0.6117, "MAE": 0.0334, "RMSE": 0.0451},
-        {"Target": "CompressorHealth", "Model": "RandomForest", "R2": 0.5968, "MAE": 0.0345, "RMSE": 0.0459},
-        {"Target": "CompressorHealth", "Model": "Ridge (Physics-only)", "R2": 0.4325, "MAE": 0.0427, "RMSE": 0.0545},
+        {"Target": "CompressorHealth", "Model": "XGBoost", "R2": 0.9163, "MAE": 0.0154, "RMSE": 0.0211},
+        {"Target": "CompressorHealth", "Model": "LightGBM", "R2": 0.9263, "MAE": 0.0146, "RMSE": 0.0198},
+        {"Target": "CompressorHealth", "Model": "RandomForest", "R2": 0.9359, "MAE": 0.0133, "RMSE": 0.0185},
+        {"Target": "CompressorHealth", "Model": "Ridge (Physics)", "R2": 0.9106, "MAE": 0.0161, "RMSE": 0.0218},
+        {"Target": "CompressorHealth", "Model": "⭐ Stacked Ensemble", "R2": 0.9227, "MAE": 0.0148, "RMSE": 0.0203},
         
-        {"Target": "CombustorHealth", "Model": "XGBoost", "R2": 0.4645, "MAE": 0.0147, "RMSE": 0.0189},
-        {"Target": "CombustorHealth", "Model": "RandomForest", "R2": 0.4621, "MAE": 0.0147, "RMSE": 0.0190},
-        {"Target": "CombustorHealth", "Model": "Ridge (Physics-only)", "R2": 0.3742, "MAE": 0.0164, "RMSE": 0.0205},
+        {"Target": "CombustorHealth", "Model": "XGBoost", "R2": 0.7627, "MAE": 0.0090, "RMSE": 0.0130},
+        {"Target": "CombustorHealth", "Model": "LightGBM", "R2": 0.7773, "MAE": 0.0088, "RMSE": 0.0126},
+        {"Target": "CombustorHealth", "Model": "RandomForest", "R2": 0.7794, "MAE": 0.0085, "RMSE": 0.0125},
+        {"Target": "CombustorHealth", "Model": "Ridge (Physics)", "R2": 0.7615, "MAE": 0.0093, "RMSE": 0.0130},
+        {"Target": "CombustorHealth", "Model": "⭐ Stacked Ensemble", "R2": 0.7205, "MAE": 0.0098, "RMSE": 0.0141},
         
-        {"Target": "TurbineHealth", "Model": "XGBoost", "R2": 0.4261, "MAE": 0.0299, "RMSE": 0.0397},
-        {"Target": "TurbineHealth", "Model": "RandomForest", "R2": 0.4334, "MAE": 0.0295, "RMSE": 0.0394},
-        {"Target": "TurbineHealth", "Model": "Ridge (Physics-only)", "R2": 0.3513, "MAE": 0.0329, "RMSE": 0.0422},
+        {"Target": "TurbineHealth", "Model": "XGBoost", "R2": 0.8034, "MAE": 0.0170, "RMSE": 0.0229},
+        {"Target": "TurbineHealth", "Model": "LightGBM", "R2": 0.7914, "MAE": 0.0174, "RMSE": 0.0235},
+        {"Target": "TurbineHealth", "Model": "RandomForest", "R2": 0.8088, "MAE": 0.0165, "RMSE": 0.0225},
+        {"Target": "TurbineHealth", "Model": "Ridge (Physics)", "R2": 0.8241, "MAE": 0.0168, "RMSE": 0.0216},
+        {"Target": "TurbineHealth", "Model": "⭐ Stacked Ensemble", "R2": 0.7992, "MAE": 0.0173, "RMSE": 0.0231},
         
-        {"Target": "OverallHealth", "Model": "XGBoost", "R2": 0.6049, "MAE": 0.0242, "RMSE": 0.0320},
-        {"Target": "OverallHealth", "Model": "RandomForest", "R2": 0.5740, "MAE": 0.0249, "RMSE": 0.0332},
-        {"Target": "OverallHealth", "Model": "Ridge (Physics-only)", "R2": 0.4413, "MAE": 0.0298, "RMSE": 0.0380},
+        {"Target": "OverallHealth", "Model": "XGBoost", "R2": 0.9273, "MAE": 0.0097, "RMSE": 0.0138},
+        {"Target": "OverallHealth", "Model": "LightGBM", "R2": 0.9351, "MAE": 0.0092, "RMSE": 0.0130},
+        {"Target": "OverallHealth", "Model": "RandomForest", "R2": 0.9436, "MAE": 0.0081, "RMSE": 0.0121},
+        {"Target": "OverallHealth", "Model": "Ridge (Physics)", "R2": 0.9323, "MAE": 0.0093, "RMSE": 0.0133},
+        {"Target": "OverallHealth", "Model": "⭐ Stacked Ensemble", "R2": 0.9362, "MAE": 0.0089, "RMSE": 0.0129},
         
-        {"Target": "Thrust_N", "Model": "XGBoost", "R2": 0.9769, "MAE": 2125.9743, "RMSE": 2654.0184},
-        {"Target": "Thrust_N", "Model": "RandomForest", "R2": 0.9593, "MAE": 2840.2987, "RMSE": 3526.8236},
-        {"Target": "Thrust_N", "Model": "Ridge (Physics-only)", "R2": 0.9369, "MAE": 3366.1228, "RMSE": 4388.8574},
+        {"Target": "Thrust_N", "Model": "XGBoost", "R2": 0.9801, "MAE": 1854.12, "RMSE": 2424.66},
+        {"Target": "Thrust_N", "Model": "LightGBM", "R2": 0.9848, "MAE": 1655.84, "RMSE": 2114.16},
+        {"Target": "Thrust_N", "Model": "RandomForest", "R2": 0.9638, "MAE": 2572.81, "RMSE": 3264.76},
+        {"Target": "Thrust_N", "Model": "Ridge (Physics)", "R2": 0.9307, "MAE": 3409.05, "RMSE": 4520.23},
+        {"Target": "Thrust_N", "Model": "⭐ Stacked Ensemble", "R2": 0.9857, "MAE": 1592.40, "RMSE": 2054.80},
         
-        {"Target": "TSFC_g_N_s", "Model": "XGBoost", "R2": 0.9798, "MAE": 0.0007, "RMSE": 0.0009},
-        {"Target": "TSFC_g_N_s", "Model": "RandomForest", "R2": 0.9726, "MAE": 0.0008, "RMSE": 0.0011},
-        {"Target": "TSFC_g_N_s", "Model": "Ridge (Physics-only)", "R2": 0.9658, "MAE": 0.0009, "RMSE": 0.0012}
+        {"Target": "TSFC_g_N_s", "Model": "XGBoost", "R2": 0.8654, "MAE": 0.0016, "RMSE": 0.0023},
+        {"Target": "TSFC_g_N_s", "Model": "LightGBM", "R2": 0.8849, "MAE": 0.0016, "RMSE": 0.0022},
+        {"Target": "TSFC_g_N_s", "Model": "RandomForest", "R2": 0.9762, "MAE": 0.0008, "RMSE": 0.0010},
+        {"Target": "TSFC_g_N_s", "Model": "Ridge (Physics)", "R2": 0.9792, "MAE": 0.0006, "RMSE": 0.0009},
+        {"Target": "TSFC_g_N_s", "Model": "⭐ Stacked Ensemble", "R2": 0.9770, "MAE": 0.0008, "RMSE": 0.0010}
     ]
     
     m_df = pd.DataFrame(metrics_data)
