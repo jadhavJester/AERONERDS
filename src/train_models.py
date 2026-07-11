@@ -5,6 +5,8 @@ import os
 from sklearn.model_selection import GroupKFold
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import Ridge
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from xgboost import XGBRegressor
 
@@ -50,12 +52,17 @@ def main():
     X_phys = train_df[physics_features].values
     Y = train_df[targets].values
     
+    # Set global seed for reproducibility
+    np.random.seed(42)
+    
     # GroupKFold Cross Validation
     gkf = GroupKFold(n_splits=5)
     
-    models_xgb = [XGBRegressor(n_estimators=300, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=42) for _ in targets]
+    # Tuned hyperparameters for XGBoost to improve health predictions
+    models_xgb = [XGBRegressor(n_estimators=400, max_depth=5, learning_rate=0.03, subsample=0.8, colsample_bytree=0.8, random_state=42) for _ in targets]
     models_rf = [RandomForestRegressor(n_estimators=300, max_depth=6, random_state=42) for _ in targets]
-    models_ridge = [Ridge(alpha=1.0) for _ in targets]
+    # Scaling features is critical for linear models like Ridge
+    models_ridge = [make_pipeline(StandardScaler(), Ridge(alpha=1.0)) for _ in targets]
     
     # Arrays to store OOF (out-of-fold) predictions
     oof_xgb = np.zeros_like(Y)
@@ -72,7 +79,7 @@ def main():
             models_rf[i].fit(X_all[train_idx], Y[train_idx, i])
             oof_rf[val_idx, i] = models_rf[i].predict(X_all[val_idx])
             
-            # Ridge (physics only)
+            # Ridge (physics only with scaling)
             models_ridge[i].fit(X_phys[train_idx], Y[train_idx, i])
             oof_ridge[val_idx, i] = models_ridge[i].predict(X_phys[val_idx])
             
@@ -93,7 +100,7 @@ def main():
     final_ridge = []
     
     for i, target in enumerate(targets):
-        xgb = XGBRegressor(n_estimators=300, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=42)
+        xgb = XGBRegressor(n_estimators=400, max_depth=5, learning_rate=0.03, subsample=0.8, colsample_bytree=0.8, random_state=42)
         xgb.fit(X_all, Y[:, i])
         final_xgb.append(xgb)
         
@@ -101,7 +108,7 @@ def main():
         rf.fit(X_all, Y[:, i])
         final_rf.append(rf)
         
-        ridge = Ridge(alpha=1.0)
+        ridge = make_pipeline(StandardScaler(), Ridge(alpha=1.0))
         ridge.fit(X_phys, Y[:, i])
         final_ridge.append(ridge)
 
@@ -112,8 +119,9 @@ def main():
     for i, target in enumerate(targets):
         for b in range(num_bootstraps):
             # Bootstrap sample (sample with replacement)
-            # Sample indices instead of data directly
-            idx = np.random.choice(len(train_df), size=len(train_df), replace=True)
+            # Use deterministic local random generator for indexing
+            rng = np.random.default_rng(b + i * num_bootstraps)
+            idx = rng.choice(len(train_df), size=len(train_df), replace=True)
             X_boot = X_all[idx]
             Y_boot = Y[idx, i]
             
@@ -134,7 +142,8 @@ def main():
     print("\n--- Ridge Coefficients (Physics Features) ---")
     for i, target in enumerate(targets):
         print(f"\n{target}:")
-        coefs = final_ridge[i].coef_
+        # Extract coefficients from the pipeline's Ridge step
+        coefs = final_ridge[i].named_steps['ridge'].coef_
         indices = np.argsort(np.abs(coefs))[::-1]
         for f in range(min(5, len(indices))):
             print(f"  {physics_features[indices[f]]}: {coefs[indices[f]]:.4f}")

@@ -579,29 +579,29 @@ elif page == "🔬 Model Evaluation":
     
     # Load and render metrics table
     metrics_data = [
-        {"Target": "CompressorHealth", "Model": "XGBoost", "R2": 0.6067, "MAE": 0.0326, "RMSE": 0.0453},
-        {"Target": "CompressorHealth", "Model": "RandomForest", "R2": 0.5957, "MAE": 0.0343, "RMSE": 0.0460},
-        {"Target": "CompressorHealth", "Model": "Ridge (Physics-only)", "R2": 0.3921, "MAE": 0.0448, "RMSE": 0.0564},
+        {"Target": "CompressorHealth", "Model": "XGBoost", "R2": 0.6117, "MAE": 0.0334, "RMSE": 0.0451},
+        {"Target": "CompressorHealth", "Model": "RandomForest", "R2": 0.5968, "MAE": 0.0345, "RMSE": 0.0459},
+        {"Target": "CompressorHealth", "Model": "Ridge (Physics-only)", "R2": 0.4325, "MAE": 0.0427, "RMSE": 0.0545},
         
-        {"Target": "CombustorHealth", "Model": "XGBoost", "R2": 0.4655, "MAE": 0.0147, "RMSE": 0.0189},
-        {"Target": "CombustorHealth", "Model": "RandomForest", "R2": 0.4635, "MAE": 0.0146, "RMSE": 0.0190},
-        {"Target": "CombustorHealth", "Model": "Ridge (Physics-only)", "R2": 0.3232, "MAE": 0.0172, "RMSE": 0.0213},
+        {"Target": "CombustorHealth", "Model": "XGBoost", "R2": 0.4645, "MAE": 0.0147, "RMSE": 0.0189},
+        {"Target": "CombustorHealth", "Model": "RandomForest", "R2": 0.4621, "MAE": 0.0147, "RMSE": 0.0190},
+        {"Target": "CombustorHealth", "Model": "Ridge (Physics-only)", "R2": 0.3742, "MAE": 0.0164, "RMSE": 0.0205},
         
-        {"Target": "TurbineHealth", "Model": "XGBoost", "R2": 0.4929, "MAE": 0.0281, "RMSE": 0.0373},
-        {"Target": "TurbineHealth", "Model": "RandomForest", "R2": 0.4769, "MAE": 0.0287, "RMSE": 0.0379},
-        {"Target": "TurbineHealth", "Model": "Ridge (Physics-only)", "R2": 0.3322, "MAE": 0.0336, "RMSE": 0.0428},
+        {"Target": "TurbineHealth", "Model": "XGBoost", "R2": 0.4261, "MAE": 0.0299, "RMSE": 0.0397},
+        {"Target": "TurbineHealth", "Model": "RandomForest", "R2": 0.4334, "MAE": 0.0295, "RMSE": 0.0394},
+        {"Target": "TurbineHealth", "Model": "Ridge (Physics-only)", "R2": 0.3513, "MAE": 0.0329, "RMSE": 0.0422},
         
-        {"Target": "OverallHealth", "Model": "XGBoost", "R2": 0.6079, "MAE": 0.0237, "RMSE": 0.0319},
-        {"Target": "OverallHealth", "Model": "RandomForest", "R2": 0.5856, "MAE": 0.0245, "RMSE": 0.0328},
-        {"Target": "OverallHealth", "Model": "Ridge (Physics-only)", "R2": 0.3972, "MAE": 0.0314, "RMSE": 0.0395},
+        {"Target": "OverallHealth", "Model": "XGBoost", "R2": 0.6049, "MAE": 0.0242, "RMSE": 0.0320},
+        {"Target": "OverallHealth", "Model": "RandomForest", "R2": 0.5740, "MAE": 0.0249, "RMSE": 0.0332},
+        {"Target": "OverallHealth", "Model": "Ridge (Physics-only)", "R2": 0.4413, "MAE": 0.0298, "RMSE": 0.0380},
         
-        {"Target": "Thrust_N", "Model": "XGBoost", "R2": 0.9823, "MAE": 1807.51, "RMSE": 2321.57},
-        {"Target": "Thrust_N", "Model": "RandomForest", "R2": 0.9585, "MAE": 2906.95, "RMSE": 3560.40},
-        {"Target": "Thrust_N", "Model": "Ridge (Physics-only)", "R2": 0.9010, "MAE": 4256.91, "RMSE": 5496.82},
+        {"Target": "Thrust_N", "Model": "XGBoost", "R2": 0.9769, "MAE": 2125.9743, "RMSE": 2654.0184},
+        {"Target": "Thrust_N", "Model": "RandomForest", "R2": 0.9593, "MAE": 2840.2987, "RMSE": 3526.8236},
+        {"Target": "Thrust_N", "Model": "Ridge (Physics-only)", "R2": 0.9369, "MAE": 3366.1228, "RMSE": 4388.8574},
         
-        {"Target": "TSFC_g_N_s", "Model": "XGBoost", "R2": 0.9821, "MAE": 0.0007, "RMSE": 0.0009},
+        {"Target": "TSFC_g_N_s", "Model": "XGBoost", "R2": 0.9798, "MAE": 0.0007, "RMSE": 0.0009},
         {"Target": "TSFC_g_N_s", "Model": "RandomForest", "R2": 0.9726, "MAE": 0.0008, "RMSE": 0.0011},
-        {"Target": "TSFC_g_N_s", "Model": "Ridge (Physics-only)", "R2": 0.9547, "MAE": 0.0010, "RMSE": 0.0014}
+        {"Target": "TSFC_g_N_s", "Model": "Ridge (Physics-only)", "R2": 0.9658, "MAE": 0.0009, "RMSE": 0.0012}
     ]
     
     m_df = pd.DataFrame(metrics_data)
