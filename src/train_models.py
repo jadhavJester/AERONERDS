@@ -112,6 +112,7 @@ def main():
     print("\nTraining Uncertainty Ensemble (Bootstrap XGBoost)...")
     ensemble_models = {target: [] for target in targets}
     num_bootstraps = 15
+    np.random.seed(42)  # Ensure complete determinism of the bootstrap indices
     for i, target in enumerate(targets):
         for b in range(num_bootstraps):
             idx = np.random.choice(len(train_df), size=len(train_df), replace=True)
