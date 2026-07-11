@@ -24,6 +24,7 @@ def add_physics_features(df: pd.DataFrame) -> pd.DataFrame:
     # Pressure & temperature ratios
     out['Compressor_PR'] = out['P2_Pa'] / (out['Pamb_Pa'] + eps)
     out['Compressor_TR'] = out['T2_K'] / (out['Tamb_K'] + eps)
+    out['Overall_PR'] = out['P4_Pa'] / (out['Pamb_Pa'] + eps)
     
     # Isentropic compressor efficiency
     exponent_c = (gamma_c - 1) / gamma_c

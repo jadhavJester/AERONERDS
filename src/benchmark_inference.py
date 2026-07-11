@@ -19,6 +19,7 @@ def main():
     
     all_features = metadata['all_features']
     physics_features = metadata['physics_features']
+    ridge_features = metadata.get('ridge_features', physics_features)
     targets = metadata['targets']
     
     # Load one row
@@ -26,7 +27,7 @@ def main():
     train_df = add_physics_features(train_raw)
     
     X_single_all = train_df[all_features].values
-    X_single_phys = train_df[physics_features].values
+    X_single_phys = train_df[ridge_features].values
     
     print("\n--- Latency Benchmark (1000 single-row runs) ---")
     

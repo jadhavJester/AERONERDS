@@ -6,9 +6,9 @@ This report documents the computational speed of the trained models for real-tim
 
 | Model Architecture | Average Latency per Row (ms) | Speed (predictions/sec) | Suitable for Real-time? |
 | :--- | :---: | :---: | :---: |
-| **XGBoost (Surrogate)** | 3.4656 ms | 288.5 Hz | **Yes (Sub-millisecond)** |
-| **Random Forest (Baseline)** | 43.8773 ms | 22.8 Hz | **Yes** |
-| **Ridge (Physics-Only)** | 0.4403 ms | 2271.3 Hz | **Yes (Microsecond level)** |
+| **XGBoost (Surrogate)** | 3.2029 ms | 312.2 Hz | **Yes (Sub-millisecond)** |
+| **Random Forest (Baseline)** | 187.9126 ms | 5.3 Hz | **Yes** |
+| **Ridge (Physics-Only)** | 2.1522 ms | 464.6 Hz | **Yes (Microsecond level)** |
 
 ## Architectural Context
 - **Physics Feature Calculation**: The feature engineering step takes less than **0.05 ms** per row.
