@@ -22,7 +22,6 @@ def add_physics_features(df: pd.DataFrame) -> pd.DataFrame:
     out['Compressor_TR'] = out['T2_K'] / (out['Tamb_K'] + eps)
     
     # 2. Isentropic compressor efficiency estimate
-    # T_ideal_rise = T_amb * ( (P2/Pamb)^((gamma-1)/gamma) - 1 )
     exponent = (gamma - 1) / gamma
     t_ideal_rise_comp = out['Tamb_K'] * (out['Compressor_PR']**exponent - 1.0)
     t_actual_rise_comp = out['T2_K'] - out['Tamb_K']
@@ -37,34 +36,49 @@ def add_physics_features(df: pd.DataFrame) -> pd.DataFrame:
     
     # 5. Turbine temperature drop & isentropic turbine efficiency estimate
     out['Turbine_TDrop'] = out['T3_K'] - out['T4_K']
-    # T_ideal_drop = T3 * ( 1 - (P4/P3)^((gamma-1)/gamma) )
     t_ideal_drop_turb = out['T3_K'] * (1.0 - out['Turbine_ER']**exponent)
     out['Turbine_Eff'] = out['Turbine_TDrop'] / (t_ideal_drop_turb + eps)
     
-    # 6. Corrected RPM
+    # 6. Corrected RPM and fuel flow
     theta = out['Tamb_K'] / T_ref
     delta = out['Pamb_Pa'] / P_ref
     out['Corrected_RPM'] = out['RPM_rev_min'] / np.sqrt(theta + eps)
     out['Corrected_FuelFlow'] = out['FuelFlow_kg_s'] / (delta * np.sqrt(theta) + eps)
     
     # 7. Estimated thrust proxy
-    # For a choked nozzle, m_dot is proportional to P3 / sqrt(T3)
     m_dot_proxy = out['P3_Pa'] / np.sqrt(out['T3_K'] + eps)
-    # Exhaust velocity proxy: Ve ~ sqrt(2 * cp * T_drop)
     ve_proxy = np.sqrt(2 * cp * np.maximum(out['Turbine_TDrop'], 0))
-    # Flight velocity V0 = Mach * sqrt(gamma * R * Tamb)
     v0 = out['Mach'] * np.sqrt(gamma * R * out['Tamb_K'])
-    # F = m_dot * (Ve - V0)
-    # We apply a scaling factor purely to bring it to a sensible O(10^4) range for comparison
-    # Real mass flow scale requires nozzle area. 
     area_proxy = 0.01 
     out['Estimated_Thrust_Proxy'] = area_proxy * m_dot_proxy * (ve_proxy - v0)
+    
+    # 8. Stage temperature ratios
+    out['Combustor_TR'] = out['T3_K'] / (out['T2_K'] + eps)
+    out['Turbine_TR'] = out['T4_K'] / (out['T3_K'] + eps)
+    out['Overall_TR'] = out['T4_K'] / (out['Tamb_K'] + eps)
+    
+    # 9. Stage pressure ratios
+    out['Combustor_PR'] = out['P3_Pa'] / (out['P2_Pa'] + eps)
+    out['Overall_PR'] = out['P4_Pa'] / (out['Pamb_Pa'] + eps)
+    
+    # 10. Corrected stage pressures and temperatures
+    out['T2_corr'] = out['T2_K'] / (theta + eps)
+    out['T3_corr'] = out['T3_K'] / (theta + eps)
+    out['T4_corr'] = out['T4_K'] / (theta + eps)
+    
+    out['P2_corr'] = out['P2_Pa'] / (delta + eps)
+    out['P3_corr'] = out['P3_Pa'] / (delta + eps)
+    out['P4_corr'] = out['P4_Pa'] / (delta + eps)
+    
+    # 11. Cycle feature (normalized by 30 cycles max)
+    out['Cycle_Norm'] = out['Cycle'] / 30.0
     
     return out
 
 if __name__ == "__main__":
-    # Quick test if run directly
-    df = pd.read_csv('../data/train.csv')
+    import os
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    df = pd.read_csv(os.path.join(BASE_DIR, 'data', 'train.csv'))
     df_feat = add_physics_features(df)
     print("Features engineered successfully.")
     print(df_feat[['Compressor_Eff', 'Turbine_Eff', 'Estimated_Thrust_Proxy']].head())

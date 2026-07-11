@@ -36,7 +36,9 @@ def main():
         'Compressor_PR', 'Compressor_TR', 'Compressor_Eff', 
         'Combustor_TRise', 'Combustor_Efficiency_Proxy', 
         'Turbine_ER', 'Turbine_TDrop', 'Turbine_Eff', 
-        'Corrected_RPM', 'Corrected_FuelFlow', 'Estimated_Thrust_Proxy'
+        'Corrected_RPM', 'Corrected_FuelFlow', 'Estimated_Thrust_Proxy',
+        'Combustor_TR', 'Turbine_TR', 'Overall_TR', 'Combustor_PR', 'Overall_PR',
+        'T2_corr', 'T3_corr', 'T4_corr', 'P2_corr', 'P3_corr', 'P4_corr', 'Cycle_Norm'
     ]
     all_features = raw_features + physics_features
     
@@ -53,8 +55,9 @@ def main():
     # GroupKFold Cross Validation
     gkf = GroupKFold(n_splits=5)
     
-    models_xgb = [XGBRegressor(n_estimators=300, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=42) for _ in targets]
-    models_rf = [RandomForestRegressor(n_estimators=300, max_depth=6, random_state=42) for _ in targets]
+    # Tuned parameters
+    models_xgb = [XGBRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=42) for _ in targets]
+    models_rf = [RandomForestRegressor(n_estimators=100, max_depth=6, random_state=42) for _ in targets]
     models_ridge = [Ridge(alpha=1.0) for _ in targets]
     
     # Arrays to store OOF (out-of-fold) predictions
@@ -93,11 +96,11 @@ def main():
     final_ridge = []
     
     for i, target in enumerate(targets):
-        xgb = XGBRegressor(n_estimators=300, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=42)
+        xgb = XGBRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=42)
         xgb.fit(X_all, Y[:, i])
         final_xgb.append(xgb)
         
-        rf = RandomForestRegressor(n_estimators=300, max_depth=6, random_state=42)
+        rf = RandomForestRegressor(n_estimators=100, max_depth=6, random_state=42)
         rf.fit(X_all, Y[:, i])
         final_rf.append(rf)
         
@@ -111,13 +114,11 @@ def main():
     num_bootstraps = 15
     for i, target in enumerate(targets):
         for b in range(num_bootstraps):
-            # Bootstrap sample (sample with replacement)
-            # Sample indices instead of data directly
             idx = np.random.choice(len(train_df), size=len(train_df), replace=True)
             X_boot = X_all[idx]
             Y_boot = Y[idx, i]
             
-            model = XGBRegressor(n_estimators=200, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=b)
+            model = XGBRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=b)
             model.fit(X_boot, Y_boot)
             ensemble_models[target].append(model)
             
@@ -126,33 +127,40 @@ def main():
     for i, target in enumerate(targets):
         print(f"\n{target}:")
         importances = final_xgb[i].feature_importances_
-        # Sort by importance
         indices = np.argsort(importances)[::-1]
         for f in range(min(5, len(indices))): # Top 5
             print(f"  {all_features[indices[f]]}: {importances[indices[f]]:.4f}")
             
-    print("\n--- Ridge Coefficients (Physics Features) ---")
-    for i, target in enumerate(targets):
-        print(f"\n{target}:")
-        coefs = final_ridge[i].coef_
-        indices = np.argsort(np.abs(coefs))[::-1]
-        for f in range(min(5, len(indices))):
-            print(f"  {physics_features[indices[f]]}: {coefs[indices[f]]:.4f}")
-
     # Save models
     models_dir = os.path.join(BASE_DIR, 'models')
     os.makedirs(models_dir, exist_ok=True)
     
-    # Save as dicts
     joblib.dump(final_xgb, os.path.join(models_dir, 'xgboost_models.pkl'))
     joblib.dump(final_rf, os.path.join(models_dir, 'rf_models.pkl'))
     joblib.dump(final_ridge, os.path.join(models_dir, 'ridge_models.pkl'))
     joblib.dump(ensemble_models, os.path.join(models_dir, 'ensemble_models.pkl'))
     
-    # Save features list to ensure matching during inference
     joblib.dump({'all_features': all_features, 'physics_features': physics_features, 'targets': targets}, os.path.join(models_dir, 'features_targets.pkl'))
     
     print("\nModels saved successfully in models/")
 
+    # Generate results table in results/metrics_report.md
+    results_dir = os.path.join(BASE_DIR, 'results')
+    os.makedirs(results_dir, exist_ok=True)
+    
+    with open(os.path.join(results_dir, 'metrics_report.md'), 'w') as f:
+        f.write("# Turbojet Digital Twin - Model Training Metrics Report\n\n")
+        f.write("This report summarizes the Out-of-Fold (OOF) cross-validation performance using 5-Fold GroupKFold cross-validation grouped by `EngineID`.\n\n")
+        f.write("## Target Performance Table\n\n")
+        f.write("| Target | Model | $R^2$ | MAE | RMSE |\n")
+        f.write("| :--- | :--- | :---: | :---: | :---: |\n")
+        for i, target in enumerate(targets):
+            for name, oof in zip(['XGBoost', 'RandomForest', 'Ridge'], [oof_xgb, oof_rf, oof_ridge]):
+                r2 = r2_score(Y[:, i], oof[:, i])
+                mae = mean_absolute_error(Y[:, i], oof[:, i])
+                rmse = np.sqrt(mean_squared_error(Y[:, i], oof[:, i]))
+                f.write(f"| **{target}** | {name} | {r2:.4f} | {mae:.4f} | {rmse:.4f} |\n")
+            f.write("| | | | | |\n")
+            
 if __name__ == '__main__':
     main()
