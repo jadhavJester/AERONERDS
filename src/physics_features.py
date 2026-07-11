@@ -79,8 +79,9 @@ def add_physics_features(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 if __name__ == "__main__":
-    # Quick test if run directly
-    df = pd.read_csv('../data/train.csv')
+    import os
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    df = pd.read_csv(os.path.join(BASE_DIR, 'data', 'train.csv'))
     df_feat = add_physics_features(df)
     print("Features engineered successfully.")
     print(f"New feature count: {len(df_feat.columns) - len(df.columns)}")

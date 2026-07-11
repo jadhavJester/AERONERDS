@@ -239,5 +239,23 @@ def main():
     
     print("\nModels saved successfully in models/")
 
+    # Generate results table in results/metrics_report.md
+    results_dir = os.path.join(BASE_DIR, 'results')
+    os.makedirs(results_dir, exist_ok=True)
+    
+    with open(os.path.join(results_dir, 'metrics_report.md'), 'w') as f:
+        f.write("# Turbojet Digital Twin - Model Training Metrics Report\n\n")
+        f.write("This report summarizes the Out-of-Fold (OOF) cross-validation performance using 5-Fold GroupKFold cross-validation grouped by `EngineID`.\n\n")
+        f.write("## Target Performance Table\n\n")
+        f.write("| Target | Model | $R^2$ | MAE | RMSE |\n")
+        f.write("| :--- | :--- | :---: | :---: | :---: |\n")
+        for i, target in enumerate(targets):
+            for name, oof in zip(['XGBoost', 'RandomForest', 'Ridge'], [oof_xgb, oof_rf, oof_ridge]):
+                r2 = r2_score(Y[:, i], oof[:, i])
+                mae = mean_absolute_error(Y[:, i], oof[:, i])
+                rmse = np.sqrt(mean_squared_error(Y[:, i], oof[:, i]))
+                f.write(f"| **{target}** | {name} | {r2:.4f} | {mae:.4f} | {rmse:.4f} |\n")
+            f.write("| | | | | |\n")
+            
 if __name__ == '__main__':
     main()
