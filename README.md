@@ -100,3 +100,7 @@ This implementation adapts and builds upon patterns from the following open-sour
 1. **[rohanmatt/Predictive-Maintenance-for-Industrial-Equipment](https://github.com/rohanmatt/Predictive-Maintenance-for-Industrial-Equipment)**: Reference design for Streamlit sidebar-driven multi-page layout (Home, Fleet, Engine, Model tabs) and interactive time simulation.
 2. **[shankara-93/predictive-maintenance-streamlit-blog](https://github.com/shankara-93/predictive-maintenance-streamlit-blog)**: Reference for lifecycle grouping by engine number and explanatory narrative format.
 3. **NASA's C-MAPSS Dataset Literature**: Foundation for RUL degradation thresholds (0.75) and bootrap uncertainty bands.
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
