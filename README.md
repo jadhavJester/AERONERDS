@@ -104,3 +104,14 @@ This implementation adapts and builds upon patterns from the following open-sour
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+## Testing
+
+Run the test suite with:
+
+```bash
+pip install pandas numpy pytest
+python -m pytest -q
+```
+
+The tests in `tests/` cover the physics-informed feature engineering in `src/physics_features.py`, including checks against the real training data in `data/`.
