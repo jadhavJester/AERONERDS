@@ -114,4 +114,4 @@ pip install pandas numpy pytest
 python -m pytest -q
 ```
 
-The tests in `tests/` cover the physics-informed feature engineering in `src/physics_features.py`, including checks against the real training data in `data/`.
+The tests in `tests/` cover the physics-informed feature engineering in `src/physics_features.py` and the RUL trend fitting in `src/degradation_trend.py` (model selection, threshold-crossover math, and an end-to-end fit on the real engine data in `data/`).
