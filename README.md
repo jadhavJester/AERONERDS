@@ -7,9 +7,12 @@ This repository contains a full **Physics-Informed Digital Twin** solution for r
 ## Project Structure
 
 ```
-turbojet_twin/
 ├── README.md                    # This file
+├── LICENSE                      # MIT license
 ├── requirements.txt             # Python dependencies (pinned versions)
+├── requirements-dev.txt         # Dev/test dependencies
+├── presentation_slides.md       # Project presentation
+├── technical_report.md          # Detailed technical report
 ├── data/                        # Consolidated dataset directory
 │   ├── train.csv                # Raw training sensor data
 │   ├── test.csv                 # Raw testing sensor data (no labels)
@@ -19,7 +22,15 @@ turbojet_twin/
 │   ├── physics_features.py      # Feature engineering module (thermodynamics)
 │   ├── train_models.py          # ML training and cross-validation pipeline
 │   ├── predict.py               # Inference, validation, and fleet RUL script
-│   └── degradation_trend.py     # Adaptive degradation curve fitting (RUL)
+│   ├── degradation_trend.py     # Adaptive degradation curve fitting (RUL)
+│   ├── physics_correlation.py   # Physics-feature correlation analysis + plots
+│   ├── cmapss_benchmark.py      # NASA C-MAPSS benchmarking module
+│   ├── benchmark_inference.py   # Inference latency benchmarking
+│   └── run_tests_and_report.py  # Test runner with report generation
+├── tests/                       # pytest test suite
+│   ├── test_physics_features.py # Tests for physics feature engineering
+│   ├── test_data_integrity.py   # Dataset schema/range integrity tests
+│   └── test_degradation_trend.py# Tests for RUL trend fitting
 ├── models/                      # Saved trained models (.pkl)
 ├── results/                     # Output directory for predictions and reports
 │   ├── predictions.csv          # Inference predictions with uncertainty bounds
@@ -32,7 +43,7 @@ turbojet_twin/
 
 ## How to Run
 
-Navigate into the `turbojet_twin/` directory first before executing scripts:
+Run the commands below from the repository root:
 
 1. **Install Dependencies**
    ```bash
