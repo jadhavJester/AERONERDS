@@ -77,6 +77,31 @@ def test_features_are_finite_for_realistic_inputs():
     assert np.isfinite(out[new_cols].to_numpy()).all()
 
 
+def test_corrected_parameters_follow_isa_formulas():
+    df = make_df()
+    out = add_physics_features(df)
+    theta = df["Tamb_K"] / 288.15
+    delta = df["Pamb_Pa"] / 101325.0
+    assert np.allclose(out["Corrected_RPM"], df["RPM_rev_min"] / np.sqrt(theta))
+    assert np.allclose(
+        out["Corrected_FuelFlow"], df["FuelFlow_kg_s"] / (delta * np.sqrt(theta)))
+
+
+def test_efficiencies_and_thrust_proxy_follow_formulas():
+    df = make_df()
+    out = add_physics_features(df)
+    pr = df["P2_Pa"] / df["Pamb_Pa"]
+    t_ideal_rise = df["Tamb_K"] * (pr ** ((1.4 - 1) / 1.4) - 1.0)
+    assert np.allclose(out["Compressor_Eff"], t_ideal_rise / (df["T2_K"] - df["Tamb_K"]))
+    er = df["P4_Pa"] / df["P3_Pa"]
+    t_ideal_drop = df["T3_K"] * (1.0 - er ** ((1.33 - 1) / 1.33))
+    assert np.allclose(out["Turbine_Eff"], (df["T3_K"] - df["T4_K"]) / t_ideal_drop)
+    m_dot = df["P3_Pa"] / np.sqrt(df["T3_K"])
+    ve = np.sqrt(2 * CP * (df["T3_K"] - df["T4_K"]))
+    v0 = df["Mach"] * np.sqrt(1.4 * 287.05 * df["Tamb_K"])
+    assert np.allclose(out["Estimated_Thrust_Proxy"], 0.01 * m_dot * (ve - v0))
+
+
 def test_real_training_data_runs_and_stays_finite():
     from pathlib import Path
 
