@@ -108,6 +108,17 @@ def test_non_degrading_health_never_crosses_threshold():
     assert dt.estimate_rul_crossover() == np.inf
 
 
+def test_non_degrading_exponential_health_never_crosses_threshold():
+    cycles = np.arange(1, 51)
+    # Health grows exponentially: the exponential fit must win and report no crossover.
+    health = np.exp(0.002 * cycles)
+
+    dt = DegradationTrend(THRESHOLD)
+    assert dt.fit(cycles, health) is True
+    assert dt.func_type == "exponential"
+    assert dt.estimate_rul_crossover() == np.inf
+
+
 def test_real_engine_data_end_to_end():
     from pathlib import Path
 
