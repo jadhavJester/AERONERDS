@@ -28,7 +28,7 @@ class DegradationTrend:
             popt_lin, _ = curve_fit(linear_func, cycles, health_values)
             y_pred_lin = linear_func(cycles, *popt_lin)
             r2_lin = r2_score(health_values, y_pred_lin)
-        except:
+        except Exception:
             r2_lin = -np.inf
             popt_lin = None
             
@@ -39,7 +39,7 @@ class DegradationTrend:
             popt_exp, _ = curve_fit(exp_func, cycles, health_values, p0=p0_exp, maxfev=2000)
             y_pred_exp = exp_func(cycles, *popt_exp)
             r2_exp = r2_score(health_values, y_pred_exp)
-        except:
+        except Exception:
             r2_exp = -np.inf
             popt_exp = None
             
