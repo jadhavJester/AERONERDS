@@ -121,7 +121,7 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 Run the test suite with:
 
 ```bash
-pip install pandas numpy pytest
+pip install pandas numpy scipy scikit-learn pytest
 python -m pytest -q
 ```
 
