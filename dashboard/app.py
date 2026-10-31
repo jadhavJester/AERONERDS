@@ -301,9 +301,10 @@ elif page == "📊 Fleet Overview":
         
         if success:
             crossover = dt.estimate_rul_crossover()
-            if crossover == np.inf or crossover < 0:
-                rul_val = 125  # Clipped limit
+            if crossover == np.inf:
+                rul_val = 125  # Clipped limit: trend never crosses the threshold
             else:
+                # Already below the threshold (crossover <= current cycle) -> 0
                 rul_val = max(0, int(crossover - row['Cycle']))
         else:
             rul_val = 0
