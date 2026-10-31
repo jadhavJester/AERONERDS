@@ -12,16 +12,33 @@ def run_cmapss_benchmark():
     print("==================================================")
     # Define directories
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    cmapss_dir = r"c:\hal hackathon dataset\NASA dataset 2\6. Turbofan Engine Degradation Simulation Data Set\extracted"
+    # Allow overriding the dataset location via the CMAPSS_DATA_DIR environment
+    # variable; falls back to the original hackathon-machine path otherwise.
+    cmapss_dir = os.environ.get(
+        "CMAPSS_DATA_DIR",
+        r"c:\hal hackathon dataset\NASA dataset 2\6. Turbofan Engine Degradation Simulation Data Set\extracted",
+    )
     results_dir = os.path.join(base_dir, "results")
     
     # 1. Load data
     print("Loading NASA C-MAPSS FD001 dataset...")
     cols = ['EngineID', 'Cycle', 'Setting1', 'Setting2', 'Setting3'] + [f'Sensor_{i}' for i in range(1, 22)]
-    
-    train_raw = pd.read_csv(os.path.join(cmapss_dir, "train_FD001.txt"), sep=r'\s+', header=None, names=cols)
-    test_raw = pd.read_csv(os.path.join(cmapss_dir, "test_FD001.txt"), sep=r'\s+', header=None, names=cols)
-    rul_gt = pd.read_csv(os.path.join(cmapss_dir, "RUL_FD001.txt"), header=None, names=['RUL'])
+
+    train_path = os.path.join(cmapss_dir, "train_FD001.txt")
+    test_path = os.path.join(cmapss_dir, "test_FD001.txt")
+    rul_path = os.path.join(cmapss_dir, "RUL_FD001.txt")
+    missing = [p for p in (train_path, test_path, rul_path) if not os.path.isfile(p)]
+    if missing:
+        raise FileNotFoundError(
+            "NASA C-MAPSS FD001 dataset not found. Expected files:\n"
+            + "\n".join(f"  - {p}" for p in missing)
+            + f"\n\nSet the CMAPSS_DATA_DIR environment variable to the folder containing "
+              f"train_FD001.txt, test_FD001.txt and RUL_FD001.txt."
+        )
+
+    train_raw = pd.read_csv(train_path, sep=r'\s+', header=None, names=cols)
+    test_raw = pd.read_csv(test_path, sep=r'\s+', header=None, names=cols)
+    rul_gt = pd.read_csv(rul_path, header=None, names=['RUL'])
     
     # 2. Compute RUL for Training Data
     # For training data, RUL at any cycle = Max Cycle for that engine - Current Cycle
