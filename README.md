@@ -125,4 +125,4 @@ pip install pandas numpy scipy scikit-learn pytest
 python -m pytest -q
 ```
 
-The tests in `tests/` cover the physics-informed feature engineering in `src/physics_features.py`, the RUL trend fitting in `src/degradation_trend.py` (model selection, threshold-crossover math, and an end-to-end fit on the real engine data in `data/`), and the dataset schema/range integrity checks in `tests/test_data_integrity.py`.
+The tests in `tests/` cover the physics-informed feature engineering in `src/physics_features.py`, the RUL trend fitting in `src/degradation_trend.py` (model selection, threshold-crossover math, and an end-to-end fit on the real engine data in `data/`), the dataset schema/range integrity checks in `tests/test_data_integrity.py`, and the C-MAPSS benchmark helpers in `src/cmapss_benchmark.py` (physics proxy ratios, piecewise-linear RUL targets, and the feature-column list — no NASA dataset or xgboost needed to run them).
