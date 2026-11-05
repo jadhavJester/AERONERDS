@@ -2,13 +2,70 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
-from sklearn.model_selection import GroupKFold
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-from xgboost import XGBRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import Ridge
+
+# Sensors with (near-)zero variance in FD001; dropped from the feature set.
+DROP_SENSORS = [1, 5, 6, 10, 16, 18, 19]
+
+
+def add_physics_proxies(df):
+    """Add thermodynamic proxy ratios to a C-MAPSS frame.
+
+    Sensor mapping: 1 = T2 (fan inlet temp), 2 = T24 (LPC outlet temp),
+    3 = T30 (HPC outlet temp), 4 = T50 (LPT outlet temp),
+    5 = P2 (fan inlet press), 7 = P30 (HPC outlet press),
+    8 = Nf (fan speed), 9 = Nc (core speed).
+    A small epsilon guards the divisions against zero denominators.
+    The input frame is not modified.
+    """
+    eps = 1e-6
+    df = df.copy()
+
+    # Compressor Pressure Ratio (HPC outlet / Fan inlet)
+    df['PR_HPC'] = df['Sensor_7'] / (df['Sensor_5'] + eps)
+
+    # Compressor Temperature Ratio (HPC outlet / Fan inlet)
+    df['TR_HPC'] = df['Sensor_3'] / (df['Sensor_1'] + eps)
+
+    # LPT Temperature Ratio (LPT outlet / LPC outlet)
+    df['TR_LPT'] = df['Sensor_4'] / (df['Sensor_2'] + eps)
+
+    # Speed Ratio (Core Speed Nc / Fan Speed Nf)
+    df['Speed_Ratio'] = df['Sensor_9'] / (df['Sensor_8'] + eps)
+
+    return df
+
+
+def compute_piecewise_rul(df, max_rul=125):
+    """Piecewise-linear RUL target for training trajectories.
+
+    RUL at any cycle = max cycle for that engine - current cycle,
+    clipped to [0, max_rul] (125 is the standard C-MAPSS cap).
+    The input frame is not modified.
+    """
+    max_cycles = df.groupby('EngineID')['Cycle'].max().reset_index()
+    max_cycles.columns = ['EngineID', 'MaxCycle']
+    merged = pd.merge(df, max_cycles, on='EngineID')
+    merged['RUL'] = np.clip(merged['MaxCycle'] - merged['Cycle'], 0, max_rul)
+    return merged
+
+
+def build_feature_columns():
+    """Model input columns: operating settings + kept sensors + proxies."""
+    keep_sensors = [f'Sensor_{i}' for i in range(1, 22) if i not in DROP_SENSORS]
+    return ['Setting1', 'Setting2', 'Setting3'] + keep_sensors + [
+        'PR_HPC', 'TR_HPC', 'TR_LPT', 'Speed_Ratio',
+    ]
+
 
 def run_cmapss_benchmark():
+    # Heavy ML imports are deferred so the pure helpers above stay
+    # importable (and testable) without xgboost installed.
+    from sklearn.model_selection import GroupKFold
+    from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+    from xgboost import XGBRegressor
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.linear_model import Ridge
+
     print("==================================================")
     # Define directories
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,46 +101,20 @@ def run_cmapss_benchmark():
     # For training data, RUL at any cycle = Max Cycle for that engine - Current Cycle
     # We clip it to a maximum of 125 cycles (piecewise linear RUL is the standard in C-MAPSS literature)
     print("Computing RUL target for training set (piecewise linear)...")
-    max_cycles = train_raw.groupby('EngineID')['Cycle'].max().reset_index()
-    max_cycles.columns = ['EngineID', 'MaxCycle']
-    train_df = pd.merge(train_raw, max_cycles, on='EngineID')
-    train_df['RUL'] = train_df['MaxCycle'] - train_df['Cycle']
-    train_df['RUL'] = np.clip(train_df['RUL'], 0, 125)
-    
+    train_df = compute_piecewise_rul(train_raw)
+
     # 3. Engineer Physics-Informed Proxies
     # Sensor 1 = T2 (fan inlet temp), Sensor 2 = T24 (LPC outlet temp), Sensor 3 = T30 (HPC outlet temp), Sensor 4 = T50 (LPT outlet temp)
     # Sensor 5 = P2 (fan inlet press), Sensor 7 = P30 (HPC outlet press), Sensor 11 = Ps30 (HPC static press)
     # We can compute pressure ratios (PR) and temperature ratios (TR) as physical proxies
-    def add_physics_proxies(df):
-        # Avoid division by zero by adding a small epsilon
-        eps = 1e-6
-        df = df.copy()
-        
-        # Compressor Pressure Ratio (HPC outlet / Fan inlet)
-        df['PR_HPC'] = df['Sensor_7'] / (df['Sensor_5'] + eps)
-        
-        # Compressor Temperature Ratio (HPC outlet / Fan inlet)
-        df['TR_HPC'] = df['Sensor_3'] / (df['Sensor_1'] + eps)
-        
-        # LPT Temperature Ratio (LPT outlet / LPC outlet)
-        df['TR_LPT'] = df['Sensor_4'] / (df['Sensor_2'] + eps)
-        
-        # Speed Ratio (Core Speed Nc / Fan Speed Nf)
-        df['Speed_Ratio'] = df['Sensor_9'] / (df['Sensor_8'] + eps)
-        
-        return df
-        
     print("Engineering physics-informed proxies...")
     train_df = add_physics_proxies(train_df)
     test_df = add_physics_proxies(test_raw)
-    
+
     # Identify feature columns
     # In FD001, some sensors have zero variance (constant values) and should be dropped
     # Let's drop sensors: 1, 5, 6, 10, 16, 18, 19
-    drop_sensors = [1, 5, 6, 10, 16, 18, 19]
-    keep_sensors = [f'Sensor_{i}' for i in range(1, 22) if i not in drop_sensors]
-    
-    features = ['Setting1', 'Setting2', 'Setting3'] + keep_sensors + ['PR_HPC', 'TR_HPC', 'TR_LPT', 'Speed_Ratio']
+    features = build_feature_columns()
     print(f"Number of input features: {len(features)}")
     print(f"Features: {features}")
     
