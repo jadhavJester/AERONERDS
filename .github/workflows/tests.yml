@@ -23,7 +23,7 @@ jobs:
         # pulls in streamlit/xgboost/lightgbm, which the tests never touch.
         run: |
           python -m pip install --upgrade pip
-          pip install pytest numpy==2.3.2 pandas==2.3.2 scipy==1.16.1 scikit-learn==1.7.2
+          pip install pytest numpy==2.3.2 pandas==2.3.2 scipy==1.16.1 scikit-learn==1.7.2 matplotlib
 
       - name: Run tests
         run: python -m pytest -q

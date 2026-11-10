@@ -8,6 +8,27 @@ try:  # package import: `python -m src.physics_correlation`
 except ImportError:  # plain script: `python src/physics_correlation.py`
     from physics_features import add_physics_features
 
+def describe_pair(target):
+    """One-line physical reading of a feature/target pair for the report table."""
+    if target == 'CompressorHealth':
+        return "Strong positive correlation indicating that estimated thermodynamic efficiency tracks compressor health closely."
+    if target == 'OverallHealth':
+        return "Shows that compressor efficiency is a strong surrogate for overall engine health degradation."
+    if target == 'Thrust_N':
+        return "Overall Pressure Ratio is a key thermodynamic driver of engine thrust output."
+    return "Combustor temperature rise is almost perfectly correlated with Thrust Specific Fuel Consumption."
+
+
+def compute_pair_correlation(df, feat, target):
+    """Pearson r and Spearman rho between two columns, ignoring non-finite rows."""
+    x = df[feat].values
+    y = df[target].values
+    mask = np.isfinite(x) & np.isfinite(y)
+    r_val, _ = pearsonr(x[mask], y[mask])
+    rho_val, _ = spearmanr(x[mask], y[mask])
+    return r_val, rho_val
+
+
 def main():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     DATA_DIR = os.path.join(BASE_DIR, 'data')
@@ -39,26 +60,16 @@ def main():
     for idx, (feat, target, feat_name, target_name, color) in enumerate(pairs):
         x = df[feat].values
         y = df[target].values
-        
+
         mask = np.isfinite(x) & np.isfinite(y)
         x_clean = x[mask]
         y_clean = y[mask]
-        
-        r_val, _ = pearsonr(x_clean, y_clean)
-        rho_val, _ = spearmanr(x_clean, y_clean)
-        
+
+        r_val, rho_val = compute_pair_correlation(df, feat, target)
+
         print(f"{feat} vs {target}: Pearson={r_val:.4f}, Spearman={rho_val:.4f}")
-        
-        # Add descriptive text to the table
-        if target == 'CompressorHealth':
-            desc = "Strong positive correlation indicating that estimated thermodynamic efficiency tracks compressor health closely."
-        elif target == 'OverallHealth':
-            desc = "Shows that compressor efficiency is a strong surrogate for overall engine health degradation."
-        elif target == 'Thrust_N':
-            desc = "Overall Pressure Ratio is a key thermodynamic driver of engine thrust output."
-        else:
-            desc = "Combustor temperature rise is almost perfectly correlated with Thrust Specific Fuel Consumption."
-            
+
+        desc = describe_pair(target)
         correlation_markdown += f"| `{feat}` | `{target}` | {r_val:.4f} | {rho_val:.4f} | {desc} |\n"
         
         # Plotting
