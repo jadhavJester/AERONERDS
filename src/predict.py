@@ -4,8 +4,12 @@ import joblib
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import os
 
-from physics_features import add_physics_features
-from degradation_trend import DegradationTrend
+try:  # package import: `python -m src.predict` / `import src.predict`
+    from src.physics_features import add_physics_features
+    from src.degradation_trend import DegradationTrend
+except ImportError:  # plain script: `python src/predict.py`
+    from physics_features import add_physics_features
+    from degradation_trend import DegradationTrend
 
 def main():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

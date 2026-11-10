@@ -3,7 +3,10 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr, spearmanr
-from physics_features import add_physics_features
+try:  # package import: `python -m src.physics_correlation`
+    from src.physics_features import add_physics_features
+except ImportError:  # plain script: `python src/physics_correlation.py`
+    from physics_features import add_physics_features
 
 def main():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

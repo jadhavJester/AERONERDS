@@ -11,7 +11,10 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 
-from physics_features import add_physics_features
+try:  # package import: `python -m src.train_models`
+    from src.physics_features import add_physics_features
+except ImportError:  # plain script: `python src/train_models.py`
+    from physics_features import add_physics_features
 
 def main():
     # Set global seed for 100% reproducibility

@@ -3,7 +3,10 @@ import numpy as np
 import joblib
 import time
 import os
-from physics_features import add_physics_features
+try:  # package import: `python -m src.benchmark_inference`
+    from src.physics_features import add_physics_features
+except ImportError:  # plain script: `python src/benchmark_inference.py`
+    from physics_features import add_physics_features
 
 def main():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
