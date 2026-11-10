@@ -121,8 +121,8 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 Run the test suite with:
 
 ```bash
-pip install pandas numpy scipy scikit-learn pytest
+pip install pandas numpy scipy scikit-learn matplotlib pytest
 python -m pytest -q
 ```
 
-The tests in `tests/` cover the physics-informed feature engineering in `src/physics_features.py`, the RUL trend fitting in `src/degradation_trend.py` (model selection, threshold-crossover math, and an end-to-end fit on the real engine data in `data/`), the dataset schema/range integrity checks in `tests/test_data_integrity.py`, and the C-MAPSS benchmark helpers in `src/cmapss_benchmark.py` (physics proxy ratios, piecewise-linear RUL targets, and the feature-column list — no NASA dataset or xgboost needed to run them).
+The tests in `tests/` cover the physics-informed feature engineering in `src/physics_features.py`, the RUL trend fitting in `src/degradation_trend.py` (model selection, threshold-crossover math, and an end-to-end fit on the real engine data in `data/`), the dataset schema/range integrity checks in `tests/test_data_integrity.py`, the C-MAPSS benchmark helpers in `src/cmapss_benchmark.py` (physics proxy ratios, piecewise-linear RUL targets, and the feature-column list — no NASA dataset or xgboost needed to run them), the stacked-inference helpers in `src/predict.py` (base-model stacking and bootstrap percentile bands, tested with stub models), and the correlation helpers in `src/physics_correlation.py` (Pearson/Spearman computation with non-finite rows ignored, and the per-pair report descriptions).
