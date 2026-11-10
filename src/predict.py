@@ -11,6 +11,27 @@ except ImportError:  # plain script: `python src/predict.py`
     from physics_features import add_physics_features
     from degradation_trend import DegradationTrend
 
+def stack_predict(base_models, meta_model, X):
+    """Stacked prediction: run each base model, then feed their outputs
+    to the meta-learner as its features."""
+    base_preds = [model.predict(X) for model in base_models]
+    meta_features = np.column_stack(base_preds)
+    return meta_model.predict(meta_features)
+
+
+def bootstrap_percentiles(models, X, low=10, high=90):
+    """Uncertainty band across bootstrap-ensemble predictions.
+
+    Returns the ``low``th and ``high``th percentiles (default 10/90)
+    of the per-row predictions of ``models``.
+    """
+    boot_preds = np.array([model.predict(X) for model in models])
+    return (
+        np.percentile(boot_preds, low, axis=0),
+        np.percentile(boot_preds, high, axis=0),
+    )
+
+
 def main():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     DATA_DIR = os.path.join(BASE_DIR, 'data')
@@ -38,26 +59,18 @@ def main():
     predictions = { 'EngineID': test_df['EngineID'], 'Cycle': test_df['Cycle'] }
     
     for i, target in enumerate(targets):
-        # Base model predictions
-        pred_xgb = xgb_models[i].predict(X_test)
-        pred_lgbm = lgbm_models[i].predict(X_test)
-        pred_rf = rf_models[i].predict(X_test)
-        
         # Stack meta-learner prediction (final output)
-        meta_features = np.column_stack([pred_xgb, pred_lgbm, pred_rf])
-        pred_stacked = stack_models[i].predict(meta_features)
-        
+        pred_stacked = stack_predict(
+            [xgb_models[i], lgbm_models[i], rf_models[i]],
+            stack_models[i],
+            X_test,
+        )
+
         predictions[target] = pred_stacked
-        
+
         # Uncertainty from bootstrap ensemble (10th and 90th percentiles)
-        boot_preds = []
-        for model in ensemble_models[target]:
-            boot_preds.append(model.predict(X_test))
-            
-        boot_preds = np.array(boot_preds)
-        p10 = np.percentile(boot_preds, 10, axis=0)
-        p90 = np.percentile(boot_preds, 90, axis=0)
-        
+        p10, p90 = bootstrap_percentiles(ensemble_models[target], X_test)
+
         predictions[f'{target}_p10'] = p10
         predictions[f'{target}_p90'] = p90
 
